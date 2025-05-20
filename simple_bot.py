@@ -51,16 +51,34 @@ class AgentConfig(BaseModel):
     name: str
     instructions: str
 
-# Check if the query is off-topic (like algebra)
-def is_off_topic(query):
-    off_topic_patterns = [
-        r'\balgebra\b', r'\bequation\b', r'\bmath\b', r'\bmathematics\b',
-        r'\bcalculus\b', r'\bphysics\b', r'\bchemistry\b', r'\bhistory\b',
-        r'\bformula\b', r'\bsolve\s+for\b', r'\bcompute\b', r'\bderivative\b'
+# Check if the query is inappropriate (narrower list, only blocks clearly inappropriate topics)
+def is_inappropriate(query):
+    inappropriate_patterns = [
+        r'\bporn\b', r'\bxxx\b', r'\bhack\b', r'\bcrack\b', r'\billegal\b', 
+        r'\bdrug dealer\b', r'\bterrorist\b', r'\blaunder money\b'
     ]
     
-    for pattern in off_topic_patterns:
+    for pattern in inappropriate_patterns:
         if re.search(pattern, query.lower()):
+            return True
+    return False
+
+# Helper function to check if the AI response indicates it doesn't know the answer
+def needs_contact_info(response_text):
+    uncertainty_patterns = [
+        r"I don't know", r"I don't have", r"I'm not sure", r"I am not sure",
+        r"I cannot provide", r"I can't provide", r"I do not have",
+        r"don't have information", r"don't have the information",
+        r"no information", r"insufficient information", 
+        r"cannot answer", r"can't answer", r"unable to answer",
+        r"don't have enough details", r"would need more information",
+        r"not able to access", r"don't have access", r"beyond my capabilities",
+        r"limited knowledge", r"can't determine", r"cannot determine",
+        r"you should contact", r"reach out to", r"get in touch with support"
+    ]
+    
+    for pattern in uncertainty_patterns:
+        if re.search(pattern, response_text, re.IGNORECASE):
             return True
     return False
 
@@ -79,9 +97,9 @@ async def handle_support_query(conversation: Conversation, agent_config: AgentCo
         
         user_message = conversation.messages[0].content
         
-        # Check if the question is off-topic
-        if is_off_topic(user_message):
-            response_text = "I'm sorry, but I can only assist with questions related to our products, services, and customer support. I cannot help with topics like algebra or other academic subjects. " + CONTACT_INFO
+        # Check if the question is inappropriate
+        if is_inappropriate(user_message):
+            response_text = "I'm sorry, but I cannot assist with inappropriate or illegal topics. " + CONTACT_INFO
             return {
                 "response": {
                     "role": "agent",
@@ -94,8 +112,11 @@ async def handle_support_query(conversation: Conversation, agent_config: AgentCo
         prompt = f"""As a customer support agent named {agent_config.name}, your role is to:
 {agent_config.instructions}
 
-Only answer questions about products, services, or business inquiries.
-Be professional and helpful, and provide contact information if you can't answer.
+GUIDELINES:
+1. Answer a wide range of questions to the best of your ability, even if they're somewhat outside typical customer support topics.
+2. Try to find a helpful answer whenever possible.
+3. If you genuinely don't know the answer or can't help with something, explain why and suggest contacting us directly.
+4. Always be professional, friendly, and helpful in your tone.
 
 User's question: {user_message}"""
         
@@ -107,7 +128,7 @@ User's question: {user_message}"""
         response_text = response.text
         
         # Add contact info if the response seems unsure
-        if "I don't know" in response_text or "I'm not sure" in response_text:
+        if needs_contact_info(response_text):
             if not response_text.endswith(CONTACT_INFO):
                 response_text += CONTACT_INFO
         
