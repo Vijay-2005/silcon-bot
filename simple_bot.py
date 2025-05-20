@@ -5,9 +5,19 @@ from typing import List, Optional, Dict, Any
 import google.generativeai as genai
 from datetime import datetime
 import re
+import os
+from dotenv import load_dotenv
 
-# Configure Gemini API directly with key (for testing only)
-genai.configure(api_key="AIzaSyCGtYwxvjzkl5T8fQH1f4cj26T5T6zM7FU")
+# Load environment variables from .env file (if present)
+load_dotenv()
+
+# Configure Gemini API with environment variable
+gemini_api_key = os.environ.get("GEMINI_API_KEY")
+if not gemini_api_key:
+    print("WARNING: GEMINI_API_KEY environment variable not set")
+    print("The API will not work until you set this variable")
+else:
+    genai.configure(api_key=gemini_api_key)
 
 app = FastAPI()
 
@@ -58,6 +68,11 @@ def is_off_topic(query):
 @app.post("/api/support")
 async def handle_support_query(conversation: Conversation, agent_config: AgentConfig):
     try:
+        # Check if API key is configured
+        if not gemini_api_key:
+            raise HTTPException(status_code=500, 
+                                detail="GEMINI_API_KEY environment variable not set")
+        
         # Get the user's question
         if not conversation.messages or len(conversation.messages) == 0:
             raise HTTPException(status_code=400, detail="No messages provided")
