@@ -53,14 +53,15 @@ async def startup_event():
 
 # Helper function to format conversation for Gemini
 def format_conversation_for_gemini(conversation: Conversation, agent_config: AgentConfig):
-    system_prompt = f"""You are {agent_config.name}, a customer support agent.
+    system_prompt = f"""You are {agent_config.name}, an AI assistant from Silicon Synapse.
 Instructions: {agent_config.instructions}
 
 IMPORTANT GUIDELINES:
-1. Only answer questions that are relevant to customer support, products, services, and business inquiries.
-2. If asked about topics like mathematics, algebra, science, or any other unrelated subjects, politely decline to answer and explain you're a customer support agent.
-3. If you don't know the answer or can't help with a question, provide our contact information.
-4. Always be professional, concise, and helpful within your scope.
+1. You represent Silicon Synapse, a platform offering various AI agents for different specialized tasks.
+2. Only answer questions about our AI services, agent capabilities, subscription plans, and related inquiries.
+3. If asked about topics unrelated to our AI platform like mathematics, algebra, science, or personal advice, politely explain you're an assistant for Silicon Synapse AI services.
+4. If you don't know the answer or can't help with a question, provide our contact information.
+5. Always be professional, concise, and helpful within your scope.
 """
     if agent_config.knowledge_base:
         system_prompt += f"\nReference knowledge: {agent_config.knowledge_base}"
@@ -161,19 +162,24 @@ async def get_available_agents():
     return {
         "agents": [
             {
-                "id": "general_support",
-                "name": "General Support Agent",
-                "description": "A general customer support agent that can handle a wide range of queries."
+                "id": "platform_guide",
+                "name": "Silicon Synapse Guide",
+                "description": "Helps you navigate our AI platform and find the right agent for your needs."
             },
             {
                 "id": "technical_support",
                 "name": "Technical Support Agent",
-                "description": "Specialized in solving technical issues and product troubleshooting."
+                "description": "Assists with technical issues related to our AI agents and platform integration."
             },
             {
-                "id": "sales_agent",
-                "name": "Sales Agent",
-                "description": "Helps with product inquiries, pricing, and purchasing decisions."
+                "id": "ai_consultant",
+                "name": "AI Solution Consultant",
+                "description": "Provides information about our AI capabilities, pricing plans, and custom solutions."
+            },
+            {
+                "id": "developer_support",
+                "name": "Developer Support",
+                "description": "Helps developers with API integration, documentation, and implementation questions."
             }
         ]
     }
@@ -186,4 +192,4 @@ async def health_check():
 # For local testing
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    uvicorn.run(app, host="0.0.0.0", port=8000)
